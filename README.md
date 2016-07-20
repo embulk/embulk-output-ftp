@@ -97,6 +97,56 @@ out:
 $ ./gradlew gem  # -t to watch change of files and rebuild continuously
 ```
 
+## Test
+
+```
+$ ./gradlew test  # -t to watch change of files and rebuild continuously
+```
+
+To run unit tests, we need to configure the following environment variables.
+
+When environment variables are not set, skip some test cases.
+
+```
+FTP_TEST_HOST
+FTP_TEST_USER
+FTP_TEST_PASSWORD
+FTP_TEST_SSL_TRUSTED_CA_CERT_FILE
+FTP_TEST_SSL_TRUSTED_CA_CERT_DATA
+```
+
+If you're using Mac OS X El Capitan and GUI Applications(IDE), like as follows.
+```xml
+$ vi ~/Library/LaunchAgents/environment.plist
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>Label</key>
+  <string>my.startup</string>
+  <key>ProgramArguments</key>
+  <array>
+    <string>sh</string>
+    <string>-c</string>
+    <string>
+      launchctl setenv FTP_TEST_HOST ftp.example.com
+      launchctl setenv FTP_TEST_USER username
+      launchctl setenv FTP_TEST_PASSWORD password
+      launchctl setenv FTP_TEST_SSL_TRUSTED_CA_CERT_FILE /path/to/cert.pem
+      launchctl setenv FTP_TEST_SSL_TRUSTED_CA_CERT_DATA /path/to/cert.pem
+    </string>
+  </array>
+  <key>RunAtLoad</key>
+  <true/>
+</dict>
+</plist>
+
+$ launchctl load ~/Library/LaunchAgents/environment.plist
+$ launchctl getenv FTP_TEST_HOST //try to get value.
+
+Then start your applications.
+```
+
 ## Acknowledgement
 
 This program is forked from [embulk-input-ftp](https://github.com/embulk/embulk-input-ftp) and originally written by @frsyuki, modified by @sakama.
