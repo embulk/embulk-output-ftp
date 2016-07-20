@@ -37,7 +37,7 @@ out:
   path_prefix: /ftp/file/path/prefix
   ext: csv
   formatter:
-    type: csv
+    type: csv.gz
     header_line: false
   encoders:
   - {type: gzip}
