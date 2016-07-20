@@ -1,4 +1,5 @@
 # FTP file output plugin for Embulk
+[![Build Status](https://travis-ci.org/sakama/embulk-output-ftp.svg?branch=master)](https://travis-ci.org/sakama/embulk-output-ftp)
 
 ## Overview
 
