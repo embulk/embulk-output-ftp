@@ -103,7 +103,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
             client = newFTPClient(log, task);
         }
         catch (Exception ex) {
-            throw new ConfigException(ex);
+            throw new ConfigException("Faild to connect to FTP server", ex);
         }
         finally {
             disconnectClient(client);
@@ -169,7 +169,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                 }
                 filePath = pathPrefix + String.format(sequenceFormat, taskIndex, fileIndex) + suffix;
                 file = File.createTempFile(filePath, ".tmp");
-                log.info("Writing local file {}", file.getAbsolutePath());
+                log.info("Writing local temporary file \"{}\"", file.getAbsolutePath());
                 output = new BufferedOutputStream(new FileOutputStream(file));
             }
             catch (IOException ex) {
@@ -225,13 +225,14 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                                 public Void call() throws FTPIllegalReplyException, FTPException, FTPDataTransferException,
                                                           FTPAbortedException, IOException, RetryGiveupException
                                 {
-                                    log.info("Upload start {} to {}", file.getAbsolutePath(), filePath);
-                                    client.upload(filePath, new BufferedInputStream(new FileInputStream(file)), 0L, 0L, new LoggingTransferListener(log, TRANSFER_NOTICE_BYTES));
-                                    log.info("Upload completed {} to {}", file.getAbsolutePath(), filePath);
+                                    client.upload(filePath,
+                                        new BufferedInputStream(new FileInputStream(file)), 0L, 0L,
+                                        new LoggingTransferListener(file.getAbsolutePath(), filePath, log, TRANSFER_NOTICE_BYTES)
+                                    );
                                     if (!file.delete()) {
                                         throw new ConfigException("Couldn't delete local file " + file.getAbsolutePath());
                                     }
-                                    log.info("Delete local temporary file {}", file.getAbsolutePath());
+                                    log.info("Deleted local temporary file \"{}\"", file.getAbsolutePath());
                                     return null;
                                 }
 
@@ -396,7 +397,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
 
         public void received(String statement)
         {
-            log.info("< " + statement);
+            log.debug("< " + statement);
         }
 
         public void sent(String statement)
@@ -405,20 +406,24 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                 // don't show password
                 return;
             }
-            log.info("> {}", statement);
+            log.debug("> {}", statement);
         }
     }
 
     private static class LoggingTransferListener implements FTPDataTransferListener
     {
+        private final String localPath;
+        private final String remotePath;
         private final Logger log;
         private final long transferNoticeBytes;
 
         private long totalTransfer;
         private long nextTransferNotice;
 
-        public LoggingTransferListener(Logger log, long transferNoticeBytes)
+        public LoggingTransferListener(String localPath, String remotePath, Logger log, long transferNoticeBytes)
         {
+            this.localPath = localPath;
+            this.remotePath = remotePath;
             this.log = log;
             this.transferNoticeBytes = transferNoticeBytes;
             this.nextTransferNotice = transferNoticeBytes;
@@ -426,7 +431,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
 
         public void started()
         {
-            log.info("Transfer started");
+            log.info("Transfer started. local path:\"{}\" remote path:\"{}\"", localPath, remotePath);
         }
 
         public void transferred(int length)
@@ -440,7 +445,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
 
         public void completed()
         {
-            log.info("Transfer completed {} bytes", totalTransfer);
+            log.info("Transfer completed. remote path:\"{}\", size:{} bytes", remotePath, totalTransfer);
         }
 
         public void aborted()
