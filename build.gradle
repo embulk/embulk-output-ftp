@@ -25,6 +25,8 @@ dependencies {
     compile files("libs/ftp4j-1.7.2.jar")
     compile "org.bouncycastle:bcpkix-jdk15on:1.52"
     testCompile "junit:junit:4.+"
+    testCompile "org.embulk:embulk-core:0.8.9:tests"
+    testCompile "org.embulk:embulk-standards:0.8.9"
 }
 
 task classpath(type: Copy, dependsOn: ["jar"]) {

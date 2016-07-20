@@ -63,7 +63,7 @@ public class SSLPlugins
 
     public static class SSLPluginConfig
     {
-        static SSLPluginConfig noVerify = new SSLPluginConfig(VerifyMode.NO_VERIFY, false, ImmutableList.<byte[]>of());
+        static SSLPluginConfig NO_VERIFY = new SSLPluginConfig(VerifyMode.NO_VERIFY, false, ImmutableList.<byte[]>of());
 
         private final VerifyMode verifyMode;
         private final boolean verifyHostname;
@@ -176,7 +176,7 @@ public class SSLPlugins
             }
         }
         else {
-            return SSLPluginConfig.noVerify;
+            return SSLPluginConfig.NO_VERIFY;
         }
     }
 
