@@ -96,3 +96,7 @@ out:
 ```
 $ ./gradlew gem  # -t to watch change of files and rebuild continuously
 ```
+
+## Acknowledgement
+
+This program is forked from [embulk-input-ftp](https://github.com/embulk/embulk-input-ftp) and originally written by @frsyuki, modified by @sakama.
