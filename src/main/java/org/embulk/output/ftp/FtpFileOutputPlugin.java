@@ -168,7 +168,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                     suffix = "." + suffix;
                 }
                 filePath = pathPrefix + String.format(sequenceFormat, taskIndex, fileIndex) + suffix;
-                file = File.createTempFile(filePath, ".tmp");
+                file = Exec.getTempFileSpace().createTempFile(filePath, ".tmp");
                 log.info("Writing local temporary file \"{}\"", file.getAbsolutePath());
                 output = new BufferedOutputStream(new FileOutputStream(file));
             }
