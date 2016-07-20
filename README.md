@@ -87,7 +87,7 @@ out:
       -----END CERTIFICATE-----
 
   path_prefix: /ftp/file/path/prefix
-    ext: csv
+  ext: csv
 ```
 
 
