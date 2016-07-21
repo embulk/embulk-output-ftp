@@ -36,6 +36,8 @@ import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.URISyntaxException;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.List;
 
 public class FtpFileOutputPlugin implements FileOutputPlugin
@@ -145,6 +147,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
         private int fileIndex;
         private File file;
         private String filePath;
+        private String remoteDirectory;
         private int taskIndex;
 
         public FtpFileOutput(FTPClient client, PluginTask task, int taskIndex)
@@ -168,7 +171,8 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                     suffix = "." + suffix;
                 }
                 filePath = pathPrefix + String.format(sequenceFormat, taskIndex, fileIndex) + suffix;
-                file = Exec.getTempFileSpace().createTempFile(filePath, ".tmp");
+                remoteDirectory = getRemoteDirectory(filePath);
+                file = Exec.getTempFileSpace().createTempFile(filePath, "tmp");
                 log.info("Writing local temporary file \"{}\"", file.getAbsolutePath());
                 output = new BufferedOutputStream(new FileOutputStream(file));
             }
@@ -225,6 +229,12 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                                 public Void call() throws FTPIllegalReplyException, FTPException, FTPDataTransferException,
                                                           FTPAbortedException, IOException, RetryGiveupException
                                 {
+                                    try {
+                                        client.changeDirectory(remoteDirectory);
+                                    }
+                                    catch (FTPException e) {
+                                        client.createDirectory(remoteDirectory);
+                                    }
                                     client.upload(filePath,
                                         new BufferedInputStream(new FileInputStream(file)), 0L, 0L,
                                         new LoggingTransferListener(file.getAbsolutePath(), filePath, log, TRANSFER_NOTICE_BYTES)
@@ -289,6 +299,12 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
         public TaskReport commit()
         {
             return Exec.newTaskReport();
+        }
+
+        private String getRemoteDirectory(String filePath)
+        {
+            Path path = Paths.get(filePath);
+            return path.getParent().toString();
         }
     }
 
