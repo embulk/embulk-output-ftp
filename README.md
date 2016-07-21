@@ -115,6 +115,12 @@ FTP_TEST_SSL_TRUSTED_CA_CERT_FILE
 FTP_TEST_SSL_TRUSTED_CA_CERT_DATA
 ```
 
+Following option is optional
+```
+FTP_TEST_PORT (default:21)
+FTP_TEST_SSL__PORT (default:990)
+```
+
 If you're using Mac OS X El Capitan and GUI Applications(IDE), like as follows.
 ```xml
 $ vi ~/Library/LaunchAgents/environment.plist
