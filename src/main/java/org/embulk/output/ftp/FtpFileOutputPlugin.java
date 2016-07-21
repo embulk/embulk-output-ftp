@@ -48,7 +48,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
         String getHost();
 
         @Config("port")
-        @ConfigDefault("null")
+        @ConfigDefault("21")
         Optional<Integer> getPort();
         void setPort(Optional<Integer> port);
 
@@ -71,6 +71,10 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
         @Config("ssl")
         @ConfigDefault("false")
         boolean getSsl();
+
+        @Config("ssl_explicit")
+        @ConfigDefault("true")
+        boolean getSslExplicit();
 
         SSLPluginConfig getSSLConfig();
         void setSSLConfig(SSLPluginConfig config);
@@ -314,14 +318,11 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
         try {
             if (task.getSsl()) {
                 client.setSSLSocketFactory(SSLPlugins.newSSLSocketFactory(task.getSSLConfig(), task.getHost()));
-                client.setSecurity(FTPClient.SECURITY_FTPS);
-                if (!task.getPort().isPresent()) {
-                    task.setPort(Optional.of(990));
+                if (task.getSslExplicit()) {
+                    client.setSecurity(FTPClient.SECURITY_FTPES);
                 }
-            }
-            else {
-                if (!task.getPort().isPresent()) {
-                    task.setPort(Optional.of(21));
+                else {
+                    client.setSecurity(FTPClient.SECURITY_FTPS);
                 }
             }
 

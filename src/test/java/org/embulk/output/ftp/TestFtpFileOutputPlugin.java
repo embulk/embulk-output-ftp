@@ -110,6 +110,10 @@ public class TestFtpFileOutputPlugin
         assertEquals(FTP_TEST_HOST, task.getHost());
         assertEquals(FTP_TEST_USER, task.getUser().get());
         assertEquals(FTP_TEST_PASSWORD, task.getPassword().get());
+        assertEquals(true, task.getPassiveMode());
+        assertEquals(false, task.getAsciiMode());
+        assertEquals(false, task.getSsl());
+        assertEquals(true, task.getSslExplicit());
         assertEquals(10, task.getMaxConnectionRetry());
     }
 
@@ -152,29 +156,29 @@ public class TestFtpFileOutputPlugin
         runner.transaction(config, schema, 0, new Control());
     }
 
-//    @Test
-//    public void testTransactionWithSsl()
-//    {
-//        ConfigSource config = Exec.newConfigSource()
-//                .set("in", inputConfig())
-//                .set("parser", parserConfig(schemaConfig()))
-//                .set("type", "ftp")
-//                .set("host", FTP_TEST_HOST)
-//                .set("port", FTP_TEST_SSL_PORT)
-//                .set("user", FTP_TEST_USER)
-//                .set("password", FTP_TEST_PASSWORD)
-//                .set("ssl", true)
-//                .set("ssl_verify", false)
-//                .set("ssl_verify_hostname", false)
-//                .set("ssl_trusted_ca_cert_file", FTP_TEST_SSL_TRUSTED_CA_CERT_FILE)
-//                .set("path_prefix", "my-prefix")
-//                .set("file_ext", ".csv")
-//                .set("formatter", formatterConfig());
-//
-//        Schema schema = config.getNested("parser").loadConfig(CsvParserPlugin.PluginTask.class).getSchemaConfig().toSchema();
-//
-//        runner.transaction(config, schema, 0, new Control());
-//    }
+    @Test
+    public void testTransactionWithSsl()
+    {
+        ConfigSource config = Exec.newConfigSource()
+                .set("in", inputConfig())
+                .set("parser", parserConfig(schemaConfig()))
+                .set("type", "ftp")
+                .set("host", FTP_TEST_HOST)
+                .set("port", FTP_TEST_SSL_PORT)
+                .set("user", FTP_TEST_USER)
+                .set("password", FTP_TEST_PASSWORD)
+                .set("ssl", true)
+                .set("ssl_verify", false)
+                .set("ssl_verify_hostname", false)
+                .set("ssl_trusted_ca_cert_file", FTP_TEST_SSL_TRUSTED_CA_CERT_FILE)
+                .set("path_prefix", "my-prefix")
+                .set("file_ext", ".csv")
+                .set("formatter", formatterConfig());
+
+        Schema schema = config.getNested("parser").loadConfig(CsvParserPlugin.PluginTask.class).getSchemaConfig().toSchema();
+
+        runner.transaction(config, schema, 0, new Control());
+    }
 
     @Test
     public void testResume()
