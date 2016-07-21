@@ -256,7 +256,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                                 public void onRetry(Exception exception, int retryCount, int retryLimit, int retryWait)
                                         throws RetryGiveupException
                                 {
-                                    if (exception instanceof FileNotFoundException || exception instanceof URISyntaxException || exception instanceof ConfigException) {
+                                    if (exception instanceof ConfigException) {
                                         throw new RetryGiveupException(exception);
                                     }
                                     String message = String.format("FTP put request failed. Retrying %d/%d after %d seconds. Message: %s",
