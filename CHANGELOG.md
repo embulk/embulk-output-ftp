@@ -1,3 +1,8 @@
+## 0.1.2 - 2016-07-21
+
+* [maintenance] Force to create remote directory if remote directory doesn't exists. [#2](https://github.com/sakama/embulk-output-ftp/pull/2)
+* [maintenance] Add additional environmental variables for unit test. [#3](https://github.com/sakama/embulk-output-ftp/pull/3)
+
 ## 0.1.1 - 2016-07-20
 
 * [maintenance] Add unit test, refactoring, change logging logic
