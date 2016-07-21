@@ -320,9 +320,11 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                 client.setSSLSocketFactory(SSLPlugins.newSSLSocketFactory(task.getSSLConfig(), task.getHost()));
                 if (task.getSslExplicit()) {
                     client.setSecurity(FTPClient.SECURITY_FTPES);
+                    log.info("Using FTPES(FTPS/explicit) mode");
                 }
                 else {
                     client.setSecurity(FTPClient.SECURITY_FTPS);
+                    log.info("Using FTPS(FTPS/implicit) mode");
                 }
             }
 
