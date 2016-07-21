@@ -46,6 +46,8 @@ import java.util.List;
 public class TestFtpFileOutputPlugin
 {
     private static String FTP_TEST_HOST;
+    private static Integer FTP_TEST_PORT;
+    private static Integer FTP_TEST_SSL_PORT;
     private static String FTP_TEST_USER;
     private static String FTP_TEST_PASSWORD;
     private static String FTP_TEST_SSL_TRUSTED_CA_CERT_FILE;
@@ -65,6 +67,8 @@ public class TestFtpFileOutputPlugin
     public static void initializeConstant()
     {
         FTP_TEST_HOST = System.getenv("FTP_TEST_HOST");
+        FTP_TEST_PORT = System.getenv("FTP_TEST_PORT") != null ? Integer.valueOf(System.getenv("FTP_TEST_PORT")) : 21;
+        FTP_TEST_SSL_PORT = System.getenv("FTP_TEST_SSL_PORT") != null ? Integer.valueOf(System.getenv("FTP_TEST_SSL_PORT")) : 990;
         FTP_TEST_USER = System.getenv("FTP_TEST_USER");
         FTP_TEST_PASSWORD = System.getenv("FTP_TEST_PASSWORD");
         FTP_TEST_SSL_TRUSTED_CA_CERT_FILE = System.getenv("FTP_TEST_SSL_TRUSTED_CA_CERT_FILE");
@@ -117,6 +121,7 @@ public class TestFtpFileOutputPlugin
                 .set("parser", parserConfig(schemaConfig()))
                 .set("type", "ftp")
                 .set("host", FTP_TEST_HOST)
+                .set("port", FTP_TEST_PORT)
                 .set("user", FTP_TEST_USER)
                 .set("password", FTP_TEST_PASSWORD)
                 .set("path_prefix", "my-prefix")
@@ -155,7 +160,7 @@ public class TestFtpFileOutputPlugin
 //                .set("parser", parserConfig(schemaConfig()))
 //                .set("type", "ftp")
 //                .set("host", FTP_TEST_HOST)
-//                .set("port", 990)
+//                .set("port", FTP_TEST_SSL_PORT)
 //                .set("user", FTP_TEST_USER)
 //                .set("password", FTP_TEST_PASSWORD)
 //                .set("ssl", true)
@@ -225,6 +230,7 @@ public class TestFtpFileOutputPlugin
                 .set("parser", parserConfig(schemaConfig()))
                 .set("type", "ftp")
                 .set("host", FTP_TEST_HOST)
+                .set("port", FTP_TEST_SSL_PORT)
                 .set("user", FTP_TEST_USER)
                 .set("password", FTP_TEST_PASSWORD)
                 .set("path_prefix", FTP_TEST_PATH_PREFIX)
