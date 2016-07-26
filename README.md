@@ -1,5 +1,5 @@
 # FTP file output plugin for Embulk
-[![Build Status](https://travis-ci.org/sakama/embulk-output-ftp.svg?branch=master)](https://travis-ci.org/sakama/embulk-output-ftp)
+[![Build Status](https://travis-ci.org/embulk/embulk-output-ftp.svg?branch=master)](https://travis-ci.org/embulk/embulk-output-ftp)
 
 This plugin support **FTP**, **FTPES(FTPS explicit)**, **FTPS(FTPS implicit)** and doesn't support **SFTP**.
 
