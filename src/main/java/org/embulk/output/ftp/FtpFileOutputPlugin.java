@@ -32,10 +32,8 @@ import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.net.URISyntaxException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -48,7 +46,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
         String getHost();
 
         @Config("port")
-        @ConfigDefault("21")
+        @ConfigDefault("null")
         Optional<Integer> getPort();
         void setPort(Optional<Integer> port);
 
@@ -95,6 +93,9 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
     }
 
     private static final Logger log = Exec.getLogger(FtpFileOutputPlugin.class);
+    private static final Integer FTP_DEFULAT_PORT = 21;
+    private static final Integer FTPS_DEFAULT_PORT = 990;
+    private static final Integer FTPES_DEFAULT_PORT = 21;
     private static final long TRANSFER_NOTICE_BYTES = 100 * 1024 * 1024;
 
     @Override
@@ -315,17 +316,24 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
     private static FTPClient newFTPClient(Logger log, PluginTask task)
     {
         FTPClient client = new FTPClient();
+        Integer defaultPort = FTP_DEFULAT_PORT;
         try {
             if (task.getSsl()) {
                 client.setSSLSocketFactory(SSLPlugins.newSSLSocketFactory(task.getSSLConfig(), task.getHost()));
                 if (task.getSslExplicit()) {
                     client.setSecurity(FTPClient.SECURITY_FTPES);
+                    defaultPort = FTPES_DEFAULT_PORT;
                     log.info("Using FTPES(FTPS/explicit) mode");
                 }
                 else {
                     client.setSecurity(FTPClient.SECURITY_FTPS);
+                    defaultPort = FTPS_DEFAULT_PORT;
                     log.info("Using FTPS(FTPS/implicit) mode");
                 }
+            }
+
+            if (!task.getPort().isPresent()) {
+                task.setPort(Optional.of(defaultPort));
             }
 
             client.addCommunicationListener(new LoggingCommunicationListner(log));
@@ -345,9 +353,13 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
             //client.setDataTimeout
             //client.setAutodetectUTF8
 
-            log.info("Connecting to {}", task.getHost());
             if (task.getPort().isPresent()) {
                 client.connect(task.getHost(), task.getPort().get());
+                log.info("Connecting to {}:{}", task.getHost(), task.getPort().get());
+            }
+            else {
+                client.connect(task.getHost());
+                log.info("Connecting to {}", task.getHost());
             }
 
             if (task.getUser().isPresent()) {

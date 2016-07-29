@@ -14,7 +14,7 @@ If you want to use SFTP, please use [embulk-output-sftp](https://github.com/civi
 ## Configuration
 
 - **host**: FTP server address (string, required)
-- **port**: FTP server port number (integer, default: `21`.)
+- **port**: FTP server port number (integer, default: `21`. `990` if `ssl` is true and `ssl_explicit` is false)
 - **user**: user name to login (string, optional)
 - **password**: password to login (string, default: `""`)
 - **path_prefix** prefix of target files (string, required)
