@@ -1,3 +1,7 @@
+## 0.1.4 - 2016-07-29
+
+* [maintenance] Fix default port number generation logic [#7](https://github.com/embulk/embulk-output-ftp/pull/7)
+
 ## 0.1.3 - 2016-07-21
 
 * [new feature] Support both of FTPS(explicit) and FTPS(implicit). [#4](https://github.com/sakama/embulk-output-ftp/pull/4)
