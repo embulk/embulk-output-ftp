@@ -141,7 +141,8 @@ FTP_TEST_SSL__PORT (default:990)
 
 If you're using Mac OS X El Capitan and GUI Applications(IDE), like as follows.
 ```xml
-$ vi ~/Library/LaunchAgents/environment.plist
+
+launchctl setenv FTP_TEST_SSL_TRUSTED_CA_CERT_FILE$ vi ~/Library/LaunchAgents/environment.plist
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
@@ -157,7 +158,10 @@ $ vi ~/Library/LaunchAgents/environment.plist
       launchctl setenv FTP_TEST_USER username
       launchctl setenv FTP_TEST_PASSWORD password
       launchctl setenv FTP_TEST_SSL_TRUSTED_CA_CERT_FILE /path/to/cert.pem
-      launchctl setenv FTP_TEST_SSL_TRUSTED_CA_CERT_DATA /path/to/cert.pem
+      launchctl setenv FTP_TEST_SSL_TRUSTED_CA_CERT_DATA "-----BEGIN CERTIFICATE-----
+      ABCDEFG...
+      EFGHIJKL...
+      -----END CERTIFICATE-----"
     </string>
   </array>
   <key>RunAtLoad</key>

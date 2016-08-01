@@ -51,6 +51,7 @@ public class TestFtpFileOutputPlugin
     private static String FTP_TEST_USER;
     private static String FTP_TEST_PASSWORD;
     private static String FTP_TEST_SSL_TRUSTED_CA_CERT_FILE;
+    private static String FTP_TEST_SSL_TRUSTED_CA_CERT_DATA;
     private static String FTP_TEST_DIRECTORY;
     private static String FTP_TEST_PATH_PREFIX;
     private static String LOCAL_PATH_PREFIX;
@@ -72,8 +73,9 @@ public class TestFtpFileOutputPlugin
         FTP_TEST_USER = System.getenv("FTP_TEST_USER");
         FTP_TEST_PASSWORD = System.getenv("FTP_TEST_PASSWORD");
         FTP_TEST_SSL_TRUSTED_CA_CERT_FILE = System.getenv("FTP_TEST_SSL_TRUSTED_CA_CERT_FILE");
+        FTP_TEST_SSL_TRUSTED_CA_CERT_DATA = System.getenv("FTP_TEST_SSL_TRUSTED_CA_CERT_DATA");
         // skip test cases, if environment variables are not set.
-        assumeNotNull(FTP_TEST_HOST, FTP_TEST_USER, FTP_TEST_PASSWORD, FTP_TEST_SSL_TRUSTED_CA_CERT_FILE);
+        assumeNotNull(FTP_TEST_HOST, FTP_TEST_USER, FTP_TEST_PASSWORD, FTP_TEST_SSL_TRUSTED_CA_CERT_FILE, FTP_TEST_SSL_TRUSTED_CA_CERT_DATA);
 
         FTP_TEST_DIRECTORY = System.getenv("FTP_TEST_DIRECTORY") != null ? getDirectory(System.getenv("FTP_TEST_DIRECTORY")) : getDirectory("/unittest/");
         FTP_TEST_PATH_PREFIX = FTP_TEST_DIRECTORY + "sample_";
@@ -157,7 +159,7 @@ public class TestFtpFileOutputPlugin
     }
 
     @Test
-    public void testTransactionWithSsl()
+    public void testTransactionWithUnverifiedSsl()
     {
         ConfigSource config = Exec.newConfigSource()
                 .set("in", inputConfig())
@@ -170,7 +172,54 @@ public class TestFtpFileOutputPlugin
                 .set("ssl", true)
                 .set("ssl_verify", false)
                 .set("ssl_verify_hostname", false)
+                .set("path_prefix", "my-prefix")
+                .set("file_ext", ".csv")
+                .set("formatter", formatterConfig());
+
+        Schema schema = config.getNested("parser").loadConfig(CsvParserPlugin.PluginTask.class).getSchemaConfig().toSchema();
+
+        runner.transaction(config, schema, 0, new Control());
+    }
+
+    @Test
+    public void testTransactionWithVerifiedSslWithCertFilePath()
+    {
+        ConfigSource config = Exec.newConfigSource()
+                .set("in", inputConfig())
+                .set("parser", parserConfig(schemaConfig()))
+                .set("type", "ftp")
+                .set("host", FTP_TEST_HOST)
+                .set("port", FTP_TEST_SSL_PORT)
+                .set("user", FTP_TEST_USER)
+                .set("password", FTP_TEST_PASSWORD)
+                .set("ssl", true)
+                .set("ssl_verify", true)
+                .set("ssl_verify_hostname", false)
                 .set("ssl_trusted_ca_cert_file", FTP_TEST_SSL_TRUSTED_CA_CERT_FILE)
+                .set("path_prefix", "my-prefix")
+                .set("file_ext", ".csv")
+                .set("formatter", formatterConfig());
+
+        Schema schema = config.getNested("parser").loadConfig(CsvParserPlugin.PluginTask.class).getSchemaConfig().toSchema();
+
+        runner.transaction(config, schema, 0, new Control());
+    }
+
+    @Test
+    public void testTransactionWithVerifiedSslWithCertFileData()
+    {
+        ConfigSource config = Exec.newConfigSource()
+                .set("in", inputConfig())
+                .set("parser", parserConfig(schemaConfig()))
+                .set("type", "ftp")
+                .set("host", FTP_TEST_HOST)
+                .set("port", FTP_TEST_SSL_PORT)
+                .set("user", FTP_TEST_USER)
+                .set("password", FTP_TEST_PASSWORD)
+                .set("ssl", true)
+                .set("ssl_verify", true)
+                .set("ssl_verify_hostname", false)
+                .set("ssl_trusted_ca_cert_data", FTP_TEST_SSL_TRUSTED_CA_CERT_DATA)
                 .set("path_prefix", "my-prefix")
                 .set("file_ext", ".csv")
                 .set("formatter", formatterConfig());
