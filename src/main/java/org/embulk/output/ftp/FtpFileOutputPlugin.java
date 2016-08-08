@@ -35,6 +35,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InterruptedIOException;
+import java.net.ConnectException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -429,6 +430,11 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                         @Override
                         public boolean isRetryableException(Exception exception)
                         {
+                            if (exception.getCause() != null) {
+                                if (exception.getCause() instanceof ConnectException && exception.getMessage().contains("Connection refused")) {
+                                    return false;
+                                }
+                            }
                             return true;
                         }
 
