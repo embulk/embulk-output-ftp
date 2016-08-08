@@ -34,6 +34,8 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InterruptedIOException;
+import java.net.ConnectException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
@@ -353,14 +355,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
             //client.setDataTimeout
             //client.setAutodetectUTF8
 
-            if (task.getPort().isPresent()) {
-                client.connect(task.getHost(), task.getPort().get());
-                log.info("Connecting to {}:{}", task.getHost(), task.getPort().get());
-            }
-            else {
-                client.connect(task.getHost());
-                log.info("Connecting to {}", task.getHost());
-            }
+            client = connect(client, task);
 
             if (task.getUser().isPresent()) {
                 log.info("Logging in with user {}", task.getUser().get());
@@ -402,6 +397,71 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
         }
         finally {
             disconnectClient(client);
+        }
+    }
+
+    private static FTPClient connect(final FTPClient client, final PluginTask task) throws InterruptedIOException
+    {
+        try {
+            return retryExecutor()
+                    .withRetryLimit(task.getMaxConnectionRetry())
+                    .withInitialRetryWait(500)
+                    .withMaxRetryWait(30 * 1000)
+                    .runInterruptible(new Retryable<FTPClient>() {
+                        @Override
+                        public FTPClient call()
+                        {
+                            try {
+                                if (task.getPort().isPresent()) {
+                                    client.connect(task.getHost(), task.getPort().get());
+                                    log.info("Connecting to {}:{}", task.getHost(), task.getPort().get());
+                                }
+                                else {
+                                    client.connect(task.getHost());
+                                    log.info("Connecting to {}", task.getHost());
+                                }
+                            }
+                            catch (FTPIllegalReplyException | FTPException | IOException ex) {
+                                throw Throwables.propagate(ex);
+                            }
+                            return client;
+                        }
+
+                        @Override
+                        public boolean isRetryableException(Exception exception)
+                        {
+                            if (exception.getCause() != null) {
+                                if (exception.getCause() instanceof ConnectException && exception.getMessage().contains("Connection refused")) {
+                                    return false;
+                                }
+                            }
+                            return true;
+                        }
+
+                        @Override
+                        public void onRetry(Exception exception, int retryCount, int retryLimit, int retryWait) throws RetryGiveupException
+                        {
+                            String message = String.format("FTP Put request failed. Retrying %d/%d after %d seconds. Message: %s: %s",
+                                    retryCount, retryLimit, retryWait / 1000, exception.getClass(), exception.getMessage());
+                            if (retryCount % 3 == 0) {
+                                log.warn(message, exception);
+                            }
+                            else {
+                                log.warn(message);
+                            }
+                        }
+
+                        @Override
+                        public void onGiveup(Exception firstException, Exception lastException) throws RetryGiveupException
+                        {
+                        }
+                    });
+        }
+        catch (RetryGiveupException ex) {
+            throw Throwables.propagate(ex);
+        }
+        catch (InterruptedException ex) {
+            throw new InterruptedIOException();
         }
     }
 

@@ -151,6 +151,7 @@ public class TestFtpFileOutputPlugin
                 .set("password", FTP_TEST_PASSWORD)
                 .set("path_prefix", "my-prefix")
                 .set("file_ext", ".csv")
+                .set("max_connection_retry", 3)
                 .set("formatter", formatterConfig());
 
         Schema schema = config.getNested("parser").loadConfig(CsvParserPlugin.PluginTask.class).getSchemaConfig().toSchema();
