@@ -1,3 +1,7 @@
+## 0.1.5 - 2016-08-08
+
+* [maintenance] Improve connection stability [#8](https://github.com/embulk/embulk-output-ftp/pull/9)
+
 ## 0.1.4 - 2016-07-29
 
 * [maintenance] Fix default port number generation logic [#7](https://github.com/embulk/embulk-output-ftp/pull/7)
