@@ -19,7 +19,7 @@ If you want to use SFTP, please use [embulk-output-sftp](https://github.com/civi
 - **password**: password to login (string, default: `""`)
 - **path_prefix** prefix of target files (string, required)
 - **sequence_format** Format for sequence part of output files (string, default: `".%03d.%02d"`)
-- **ext** e.g. "csv.gz, json.gz" (string, required)
+- **file_ext** e.g. "csv.gz, json.gz" (string, required)
 - **passive_mode**: use passive mode (boolean, default: true)
 - **ascii_mode**: use ASCII mode instead of binary mode (boolean, default: false)
 - **ssl**: use FTPS (SSL encryption). (boolean, default: false)
@@ -54,7 +54,7 @@ out:
   port: 21
   user: anonymous
   path_prefix: /ftp/file/path/prefix
-  ext: csv
+  file_ext: csv
   formatter:
     type: csv.gz
     header_line: false
@@ -76,7 +76,7 @@ out:
   ssl_verify: false
 
   path_prefix: /ftp/file/path/prefix
-  ext: csv
+  file_ext: csv
 ```
 
 FTPS encryption with server certificate verification:
@@ -106,7 +106,7 @@ out:
       -----END CERTIFICATE-----
 
   path_prefix: /ftp/file/path/prefix
-  ext: csv
+  file_ext: csv
 ```
 
 ## Build
