@@ -92,6 +92,10 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
         @Config("max_connection_retry")
         @ConfigDefault("10") // 10 times retry to connect FTP server if failed.
         int getMaxConnectionRetry();
+
+        @Config("directory_separator")
+        @ConfigDefault("\"/\"")
+        String getDirectorySeparator();
     }
 
     private static final Logger log = Exec.getLogger(FtpFileOutputPlugin.class);
@@ -150,6 +154,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
         private final String sequenceFormat;
         private final String pathSuffix;
         private final int maxConnectionRetry;
+        private final String separator;
         private BufferedOutputStream output = null;
         private int fileIndex;
         private File file;
@@ -165,6 +170,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
             this.sequenceFormat = task.getSequenceFormat();
             this.pathSuffix = task.getFileNameExtension();
             this.maxConnectionRetry = task.getMaxConnectionRetry();
+            this.separator = task.getDirectorySeparator();
         }
 
         @Override
@@ -178,7 +184,10 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                     suffix = "." + suffix;
                 }
                 filePath = pathPrefix + String.format(sequenceFormat, taskIndex, fileIndex) + suffix;
-                remoteDirectory = getRemoteDirectory(filePath);
+                if (!filePath.startsWith(separator)) {
+                    filePath = separator + filePath;
+                }
+                remoteDirectory = getRemoteDirectory(filePath, separator);
                 file = Exec.getTempFileSpace().createTempFile(filePath, "tmp");
                 log.info("Writing local temporary file \"{}\"", file.getAbsolutePath());
                 output = new BufferedOutputStream(new FileOutputStream(file));
@@ -308,10 +317,17 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
             return Exec.newTaskReport();
         }
 
-        private String getRemoteDirectory(String filePath)
+        private String getRemoteDirectory(String filePath, String separator)
         {
             Path path = Paths.get(filePath);
-            return path.getParent().toString();
+            if (path.getParent() == null) {
+                return separator;
+            }
+            String parent = path.getParent().toString();
+            if (!parent.startsWith(separator)) {
+                parent = separator + parent;
+            }
+            return parent;
         }
     }
 

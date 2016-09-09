@@ -117,6 +117,7 @@ public class TestFtpFileOutputPlugin
         assertEquals(false, task.getSsl());
         assertEquals(true, task.getSslExplicit());
         assertEquals(10, task.getMaxConnectionRetry());
+        assertEquals("/", task.getDirectorySeparator());
     }
 
     @Test
