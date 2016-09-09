@@ -1,6 +1,11 @@
+## 0.1.6 - 2016-09-09
+
+* [maintenance] Fix NullPointerException at FtpFileOutput.getRemoteDirectory() method [#12](https://github.com/embulk/embulk-output-ftp/pull/12)
+
+
 ## 0.1.5 - 2016-08-08
 
-* [maintenance] Improve connection stability [#8](https://github.com/embulk/embulk-output-ftp/pull/9)
+* [maintenance] Improve connection stability [#9](https://github.com/embulk/embulk-output-ftp/pull/9)
 
 ## 0.1.4 - 2016-07-29
 
