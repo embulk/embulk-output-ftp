@@ -275,6 +275,15 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                                     if (exception instanceof ConfigException) {
                                         throw new RetryGiveupException(exception);
                                     }
+                                    else if (exception instanceof FTPException) {
+                                        if (((FTPException) exception).getCode() == 550) {
+                                            // Requested action not taken
+                                            // Code: 550 contains other error types so check message.
+                                            if (exception.getMessage().contains("Create directory operation failed")) {
+                                                throw new ConfigException(exception);
+                                            }
+                                        }
+                                    }
                                     String message = String.format("FTP put request failed. Retrying %d/%d after %d seconds. Message: %s",
                                             retryCount, retryLimit, retryWait / 1000, exception.getMessage());
                                     if (retryCount % 3 == 0) {
