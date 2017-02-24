@@ -18,6 +18,7 @@ import org.embulk.config.ConfigSource;
 import org.embulk.config.Task;
 import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
+import org.embulk.config.UserDataException;
 import org.embulk.output.ftp.SSLPlugins.SSLPluginConfig;
 import org.embulk.spi.Buffer;
 import org.embulk.spi.Exec;
@@ -249,7 +250,15 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                                         client.changeDirectory(remoteDirectory);
                                     }
                                     catch (FTPException e) {
-                                        client.createDirectory(remoteDirectory);
+                                        try {
+                                            client.createDirectory(remoteDirectory);
+                                        }
+                                        catch (FTPException e1) {
+                                            if (e1.getCode() == 550) {
+                                                // Create directory operation failed
+                                                throw new OperationDeniedException(e1);
+                                            }
+                                        }
                                     }
                                     client.upload(filePath,
                                             new BufferedInputStream(new FileInputStream(file)), 0L, 0L,
@@ -275,14 +284,8 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                                     if (exception instanceof ConfigException) {
                                         throw new RetryGiveupException(exception);
                                     }
-                                    else if (exception instanceof FTPException) {
-                                        if (((FTPException) exception).getCode() == 550) {
-                                            // Requested action not taken
-                                            // Code: 550 contains other error types so check message.
-                                            if (exception.getMessage().contains("Create directory operation failed")) {
-                                                throw new ConfigException(exception);
-                                            }
-                                        }
+                                    else if (exception instanceof OperationDeniedException) {
+                                        throw new ConfigException(exception);
                                     }
                                     String message = String.format("FTP put request failed. Retrying %d/%d after %d seconds. Message: %s",
                                             retryCount, retryLimit, retryWait / 1000, exception.getMessage());
@@ -337,6 +340,23 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                 parent = separator + parent;
             }
             return parent;
+        }
+
+        public class OperationDeniedException extends RuntimeException implements UserDataException
+        {
+            protected OperationDeniedException()
+            {
+            }
+
+            public OperationDeniedException(String message)
+            {
+                super(message);
+            }
+
+            public OperationDeniedException(Throwable cause)
+            {
+                super(cause);
+            }
         }
     }
 
