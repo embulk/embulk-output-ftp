@@ -1,3 +1,7 @@
+## 0.1.7 - 2017-02-24
+
+* [maintenance] Don't retry when Code:550(Permission denied) error happens [#13](https://github.com/embulk/embulk-output-ftp/pull/13)
+
 ## 0.1.6 - 2016-09-09
 
 * [maintenance] Fix NullPointerException at FtpFileOutput.getRemoteDirectory() method [#12](https://github.com/embulk/embulk-output-ftp/pull/12)
