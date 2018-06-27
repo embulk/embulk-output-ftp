@@ -20,6 +20,8 @@ import org.embulk.spi.OutputPlugin;
 import org.embulk.spi.Schema;
 import org.embulk.spi.TransactionalFileOutput;
 import org.embulk.standards.CsvParserPlugin;
+import org.embulk.util.ftp.SSLPlugins;
+import org.embulk.util.ftp.SSLPlugins.SSLPluginConfig;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
