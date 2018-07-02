@@ -19,13 +19,14 @@ import org.embulk.config.Task;
 import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
 import org.embulk.config.UserDataException;
-import org.embulk.output.ftp.SSLPlugins.SSLPluginConfig;
 import org.embulk.spi.Buffer;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileOutputPlugin;
 import org.embulk.spi.TransactionalFileOutput;
 import org.embulk.spi.util.RetryExecutor.RetryGiveupException;
 import org.embulk.spi.util.RetryExecutor.Retryable;
+import org.embulk.util.ftp.SSLPlugins;
+import org.embulk.util.ftp.SSLPlugins.SSLPluginConfig;
 import org.slf4j.Logger;
 import static org.embulk.spi.util.RetryExecutor.retryExecutor;
 
