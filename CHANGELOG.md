@@ -1,3 +1,7 @@
+## 0.1.8 - 2018-07-04
+* [maintenance] Only support Java8 [#16](https://github.com/embulk/embulk-output-ftp/pull/16)
+* [maintenance] Use embulk-util-ftp from Bintray [#15](https://github.com/embulk/embulk-output-ftp/pull/15)
+
 ## 0.1.7 - 2017-02-24
 
 * [maintenance] Don't retry when Code:550(Permission denied) error happens [#13](https://github.com/embulk/embulk-output-ftp/pull/13)
