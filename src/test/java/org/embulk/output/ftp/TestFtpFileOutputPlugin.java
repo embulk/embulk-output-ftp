@@ -21,7 +21,6 @@ import org.embulk.spi.Schema;
 import org.embulk.spi.TransactionalFileOutput;
 import org.embulk.standards.CsvParserPlugin;
 import org.embulk.util.ftp.SSLPlugins;
-import org.embulk.util.ftp.SSLPlugins.SSLPluginConfig;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
@@ -30,7 +29,6 @@ import org.junit.Test;
 import org.slf4j.Logger;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeNotNull;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedReader;
@@ -44,6 +42,7 @@ import java.lang.reflect.Method;
 import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 public class TestFtpFileOutputPlugin
 {
@@ -67,19 +66,20 @@ public class TestFtpFileOutputPlugin
      *   FTP_TEST_SSL_TRUSTED_CA_CERT_FILE
      */
     @BeforeClass
-    public static void initializeConstant()
+    public static void initializeConstant() throws Exception
     {
-        FTP_TEST_HOST = System.getenv("FTP_TEST_HOST");
-        FTP_TEST_PORT = System.getenv("FTP_TEST_PORT") != null ? Integer.valueOf(System.getenv("FTP_TEST_PORT")) : 21;
-        FTP_TEST_SSL_PORT = System.getenv("FTP_TEST_SSL_PORT") != null ? Integer.valueOf(System.getenv("FTP_TEST_SSL_PORT")) : 990;
-        FTP_TEST_USER = System.getenv("FTP_TEST_USER");
-        FTP_TEST_PASSWORD = System.getenv("FTP_TEST_PASSWORD");
-        FTP_TEST_SSL_TRUSTED_CA_CERT_FILE = System.getenv("FTP_TEST_SSL_TRUSTED_CA_CERT_FILE");
-        FTP_TEST_SSL_TRUSTED_CA_CERT_DATA = System.getenv("FTP_TEST_SSL_TRUSTED_CA_CERT_DATA");
-        // skip test cases, if environment variables are not set.
-        assumeNotNull(FTP_TEST_HOST, FTP_TEST_USER, FTP_TEST_PASSWORD, FTP_TEST_SSL_TRUSTED_CA_CERT_FILE, FTP_TEST_SSL_TRUSTED_CA_CERT_DATA);
+        final Map<String, String> env = System.getenv();
+        FTP_TEST_HOST = env.getOrDefault("FTP_TEST_HOST", "localhost");
+        FTP_TEST_PORT = Integer.valueOf(env.getOrDefault("FTP_TEST_PORT", "11021"));
+        FTP_TEST_SSL_PORT = Integer.valueOf(env.getOrDefault("FTP_TEST_SSL_PORT", "990"));
+        FTP_TEST_USER = env.getOrDefault("FTP_TEST_USER", "scott");
+        FTP_TEST_PASSWORD = env.getOrDefault("FTP_TEST_PASSWORD", "tiger");
+        FTP_TEST_SSL_TRUSTED_CA_CERT_FILE = env.getOrDefault("FTP_TEST_SSL_TRUSTED_CA_CERT_FILE",
+                Resources.getResource("ftp.crt").getPath());
+        FTP_TEST_SSL_TRUSTED_CA_CERT_DATA = env.getOrDefault("FTP_TEST_SSL_TRUSTED_CA_CERT_DATA",
+                getFileContents(Resources.getResource("ftp.crt").getPath()));
 
-        FTP_TEST_DIRECTORY = System.getenv("FTP_TEST_DIRECTORY") != null ? getDirectory(System.getenv("FTP_TEST_DIRECTORY")) : getDirectory("/unittest/");
+        FTP_TEST_DIRECTORY = getDirectory(env.getOrDefault("FTP_TEST_DIRECTORY", "/unittest/"));
         FTP_TEST_PATH_PREFIX = FTP_TEST_DIRECTORY + "sample_";
         LOCAL_PATH_PREFIX = Resources.getResource("sample_01.csv").getPath();
     }
@@ -287,7 +287,7 @@ public class TestFtpFileOutputPlugin
                 .set("parser", parserConfig(schemaConfig()))
                 .set("type", "ftp")
                 .set("host", FTP_TEST_HOST)
-                .set("port", FTP_TEST_SSL_PORT)
+                .set("port", FTP_TEST_PORT)
                 .set("user", FTP_TEST_USER)
                 .set("password", FTP_TEST_PASSWORD)
                 .set("path_prefix", FTP_TEST_PATH_PREFIX)
@@ -434,5 +434,20 @@ public class TestFtpFileOutputPlugin
             bo.write(buffer, 0, len);
         }
         return bo.toByteArray();
+    }
+
+    private static String getFileContents(String path) throws Exception
+    {
+        StringBuilder sb = new StringBuilder();
+        try (InputStream is = new FileInputStream(new File(path))) {
+            BufferedReader br = new BufferedReader(new InputStreamReader(is));
+            String line = br.readLine();
+
+            while (line != null) {
+                sb.append(line).append("\n");
+                line = br.readLine();
+            }
+        }
+        return sb.toString();
     }
 }
