@@ -123,12 +123,15 @@ so that an FTP server will be locally launched then you can run tests with `./gr
 ```sh
 $ docker-compose up -d
 Creating network "embulk-output-ftp_default" with the default driver
-Creating embulk-output-ftp_server ... done
+Creating embulk-output-ftp_server  ... done
+Creating embulk-output-ftps_server ... done
 
 $ docker-compose ps
          Name              Command     State                       Ports
 ---------------------------------------------------------------------------------------------------
-embulk-output-ftp_server   /start-ftp   Up      0.0.0.0:11021->21/tcp, 0.0.0.0:65000->65000/tcp, ...
+embulk-output-ftp_server    /usr/sbin/run-vsftpd.sh          Up      20/tcp, 0.0.0.0:11021->21/tcp, 0.0.0.0:65000->65000/tcp, 0.0.0.0:65001->65001/tcp, 0.0.0.0:65002->65002/tcp, 0.0.0.0:65003->65003/tcp,                        
+                                                                     0.0.0.0:65004->65004/tcp                                                                                                                                      
+embulk-output-ftps_server   /usr/sbin/run-vsftpd-with- ...   Up      20/tcp, 0.0.0.0:990->21/tcp, 0.0.0.0:65005->65005/tcp, 0.0.0.0:65006->65006/tcp, 0.0.0.0:65007->65007/tcp, 0.0.0.0:65008->65008/tcp    
 
 $ ./gradlew test  # -t to watch change of files and rebuild continuously
 ```
