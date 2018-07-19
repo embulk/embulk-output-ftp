@@ -2,15 +2,23 @@ version: '3'
 services:
   ftp_server:
     container_name: embulk-output-ftp_server
-    image: "mcreations/ftp"
+    image: "fauria/vsftpd"
     environment:
       - FTP_USER=scott
       - FTP_PASS=tiger
-      - HOST=localhost
       - PASV_MIN_PORT=65000
       - PASV_MAX_PORT=65004
     ports:
       - "11021:21"
       - "65000-65004:65000-65004"
-    volumes:
-      - ./src/test/resources:/data/scott/unittest
+  ftps_server:
+    container_name: embulk-output-ftps_server
+    build: ./docker-ftps
+    environment:
+      - FTP_USER=scott
+      - FTP_PASS=tiger
+      - PASV_MIN_PORT=65005
+      - PASV_MAX_PORT=65008
+    ports:
+      - "990:21"
+      - "65005-65008:65005-65008"
