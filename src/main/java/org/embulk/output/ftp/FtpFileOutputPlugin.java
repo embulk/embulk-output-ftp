@@ -1,6 +1,5 @@
 package org.embulk.output.ftp;
 
-import com.google.common.base.Optional;
 import com.google.common.base.Throwables;
 import it.sauronsoftware.ftp4j.FTPAbortedException;
 import it.sauronsoftware.ftp4j.FTPClient;
@@ -41,6 +40,7 @@ import java.net.ConnectException;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.util.List;
+import java.util.Optional;
 
 public class FtpFileOutputPlugin implements FileOutputPlugin
 {
@@ -405,7 +405,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
 
             if (task.getUser().isPresent()) {
                 log.info("Logging in with user {}", task.getUser().get());
-                client.login(task.getUser().get(), task.getPassword().or(""));
+                client.login(task.getUser().get(), task.getPassword().orElse(""));
             }
 
             log.info("Using passive mode");
