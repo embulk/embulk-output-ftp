@@ -1,4 +1,6 @@
-## 0.1.8 - 2018-07-04
+## 0.2.1 - 2018-12-14
+* [maintenance] Update Embulk version v0.8.9 to v0.9.11 and refactor code for Java8 support [#21](https://github.com/embulk/embulk-output-ftp/pull/21)
+## 0.2.0 - 2018-07-04
 * [maintenance] Only support Java8 [#16](https://github.com/embulk/embulk-output-ftp/pull/16)
 * [maintenance] Use embulk-util-ftp from Bintray [#15](https://github.com/embulk/embulk-output-ftp/pull/15)
 
