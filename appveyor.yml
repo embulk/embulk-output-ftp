@@ -1,0 +1,24 @@
+version: "{branch} {build}"
+image: Visual Studio 2017
+
+install:
+  - choco install docker-compose
+  - docker version
+  - & $Env:ProgramFiles\Docker\Docker\DockerCli.exe -SwitchDaemon
+
+build_script:
+  - docker-compose up -d
+  - docker-compose ps
+  # To avoid call-selfrun.bat FileNotFound exception, it installs and uses handle.exe as workaround provided by AppVeyor support.
+  # see http://help.appveyor.com/discussions/problems/5975-the-process-cannot-access-the-file-because-it-is-being-used-by-another-process
+  - gradlew.bat --info --no-daemon check
+
+cache:
+  - C:\Users\appveyor\.gradle
+
+environment:
+  matrix:
+    - JAVA_HOME: C:\Program Files\Java\jdk1.8.0
+
+matrix:
+  fast_finish: true

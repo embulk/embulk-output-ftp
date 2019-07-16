@@ -22,3 +22,8 @@ services:
     ports:
       - "990:21"
       - "65005-65008:65005-65008"
+
+networks:
+  default:
+    external:
+      name: nat
