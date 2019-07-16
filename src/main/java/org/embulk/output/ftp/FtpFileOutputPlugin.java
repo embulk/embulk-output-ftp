@@ -261,10 +261,11 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                                             }
                                         }
                                     }
-                                    client.upload(filePath,
-                                            new BufferedInputStream(new FileInputStream(file)), 0L, 0L,
-                                            new LoggingTransferListener(file.getAbsolutePath(), filePath, log, TRANSFER_NOTICE_BYTES)
-                                    );
+                                    try (BufferedInputStream in = new BufferedInputStream(new FileInputStream(file))) {
+                                        client.upload(filePath, in, 0L, 0L,
+                                                new LoggingTransferListener(file.getAbsolutePath(), filePath, log, TRANSFER_NOTICE_BYTES)
+                                        );
+                                    }
                                     if (!file.delete()) {
                                         throw new ConfigException("Couldn't delete local file " + file.getAbsolutePath());
                                     }
