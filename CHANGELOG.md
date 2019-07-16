@@ -1,3 +1,6 @@
+## 0.2.2 - 2019-07-16
+* [maintenance] Fix unclosed resource to prevent temp file deletion failure on Windows [#24](https://github.com/embulk/embulk-output-ftp/pull/24)
+
 ## 0.2.1 - 2018-12-14
 * [maintenance] Update Embulk version v0.8.9 to v0.9.11 and refactor code for Java8 support [#21](https://github.com/embulk/embulk-output-ftp/pull/21)
 ## 0.2.0 - 2018-07-04
