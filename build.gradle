@@ -17,20 +17,20 @@ configurations {
     provided
 }
 
-version = "0.2.2"
+version = "0.2.3"
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
 dependencies {
-    compile  "org.embulk:embulk-core:0.9.11"
-    provided "org.embulk:embulk-core:0.9.11"
+    compile  "org.embulk:embulk-core:0.9.20"
+    provided "org.embulk:embulk-core:0.9.20"
     compile files("libs/ftp4j-1.7.2.jar")
     compile 'org.embulk.input.ftp:embulk-util-ftp:0.1.6'
     compile "org.bouncycastle:bcpkix-jdk15on:1.52"
     testCompile "junit:junit:4.+"
-    testCompile "org.embulk:embulk-core:0.9.11:tests"
-    testCompile "org.embulk:embulk-standards:0.9.11"
+    testCompile "org.embulk:embulk-core:0.9.20:tests"
+    testCompile "org.embulk:embulk-standards:0.9.20"
 }
 
 task classpath(type: Copy, dependsOn: ["jar"]) {

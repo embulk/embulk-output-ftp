@@ -190,7 +190,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                     filePath = separator + filePath;
                 }
                 remoteDirectory = getRemoteDirectory(filePath, separator);
-                file = Exec.getTempFileSpace().createTempFile(filePath, "tmp");
+                file = Exec.getTempFileSpace().createTempFile("tmp");
                 log.info("Writing local temporary file \"{}\"", file.getAbsolutePath());
                 output = new BufferedOutputStream(new FileOutputStream(file));
             }
