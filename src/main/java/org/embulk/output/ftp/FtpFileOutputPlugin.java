@@ -1,6 +1,5 @@
 package org.embulk.output.ftp;
 
-import com.google.common.base.Throwables;
 import it.sauronsoftware.ftp4j.FTPAbortedException;
 import it.sauronsoftware.ftp4j.FTPClient;
 import it.sauronsoftware.ftp4j.FTPCommunicationListener;
@@ -9,12 +8,9 @@ import it.sauronsoftware.ftp4j.FTPDataTransferException;
 import it.sauronsoftware.ftp4j.FTPDataTransferListener;
 import it.sauronsoftware.ftp4j.FTPException;
 import it.sauronsoftware.ftp4j.FTPIllegalReplyException;
-import org.embulk.config.Config;
-import org.embulk.config.ConfigDefault;
 import org.embulk.config.ConfigDiff;
 import org.embulk.config.ConfigException;
 import org.embulk.config.ConfigSource;
-import org.embulk.config.Task;
 import org.embulk.config.TaskReport;
 import org.embulk.config.TaskSource;
 import org.embulk.config.UserDataException;
@@ -22,12 +18,19 @@ import org.embulk.spi.Buffer;
 import org.embulk.spi.Exec;
 import org.embulk.spi.FileOutputPlugin;
 import org.embulk.spi.TransactionalFileOutput;
-import org.embulk.spi.util.RetryExecutor.RetryGiveupException;
-import org.embulk.spi.util.RetryExecutor.Retryable;
-import org.embulk.util.ftp.SSLPlugins;
-import org.embulk.util.ftp.SSLPlugins.SSLPluginConfig;
+import org.embulk.util.config.Config;
+import org.embulk.util.config.ConfigDefault;
+import org.embulk.util.config.ConfigMapper;
+import org.embulk.util.config.ConfigMapperFactory;
+import org.embulk.util.config.Task;
+import org.embulk.util.config.TaskMapper;
+import org.embulk.util.retryhelper.RetryExecutor;
+import org.embulk.util.retryhelper.RetryGiveupException;
+import org.embulk.util.retryhelper.Retryable;
+import org.embulk.util.ssl.SSLPlugins;
+import org.embulk.util.ssl.SSLPlugins.SSLPluginConfig;
 import org.slf4j.Logger;
-import static org.embulk.spi.util.RetryExecutor.retryExecutor;
+import org.slf4j.LoggerFactory;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -100,7 +103,11 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
         String getDirectorySeparator();
     }
 
-    private static final Logger log = Exec.getLogger(FtpFileOutputPlugin.class);
+    static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = ConfigMapperFactory.builder().addDefaultModules().build();
+    static final ConfigMapper CONFIG_MAPPER = CONFIG_MAPPER_FACTORY.createConfigMapper();
+    static final TaskMapper TASK_MAPPER = CONFIG_MAPPER_FACTORY.createTaskMapper();
+
+    private static final Logger log = LoggerFactory.getLogger(FtpFileOutputPlugin.class);
     private static final Integer FTP_DEFULAT_PORT = 21;
     private static final Integer FTPS_DEFAULT_PORT = 990;
     private static final Integer FTPES_DEFAULT_PORT = 21;
@@ -109,7 +116,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
     @Override
     public ConfigDiff transaction(ConfigSource config, int taskCount, FileOutputPlugin.Control control)
     {
-        PluginTask task = config.loadConfig(PluginTask.class);
+        final PluginTask task = CONFIG_MAPPER.map(config, PluginTask.class);
         task.setSSLConfig(SSLPlugins.configure(task));
 
         // try to check if plugin could connect to FTP server
@@ -124,7 +131,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
             disconnectClient(client);
         }
 
-        return resume(task.dump(), taskCount, control);
+        return resume(task.toTaskSource(), taskCount, control);
     }
 
     @Override
@@ -132,7 +139,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
     {
         control.run(taskSource);
 
-        return Exec.newConfigDiff();
+        return CONFIG_MAPPER_FACTORY.newConfigDiff();
     }
 
     @Override
@@ -143,7 +150,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
     @Override
     public TransactionalFileOutput open(TaskSource taskSource, final int taskIndex)
     {
-        final PluginTask task = taskSource.loadTask(PluginTask.class);
+        final PluginTask task = TASK_MAPPER.map(taskSource, PluginTask.class);
 
         FTPClient client = newFTPClient(log, task);
         return new FtpFileOutput(client, task, taskIndex);
@@ -195,7 +202,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                 output = new BufferedOutputStream(new FileOutputStream(file));
             }
             catch (IOException ex) {
-                throw Throwables.propagate(ex);
+                throw new RuntimeException(ex);
             }
         }
 
@@ -207,7 +214,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                     fileIndex++;
                 }
                 catch (IOException ex) {
-                    throw Throwables.propagate(ex);
+                    throw new RuntimeException(ex);
                 }
             }
         }
@@ -219,7 +226,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                 output.write(buffer.array(), buffer.offset(), buffer.limit());
             }
             catch (IOException ex) {
-                throw Throwables.propagate(ex);
+                throw new RuntimeException(ex);
             }
             finally {
                 buffer.release();
@@ -238,10 +245,11 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
         {
             if (filePath != null) {
                 try {
-                    return retryExecutor()
+                    return RetryExecutor.builder()
                             .withRetryLimit(maxConnectionRetry)
-                            .withInitialRetryWait(500)
-                            .withMaxRetryWait(30 * 1000)
+                            .withInitialRetryWaitMillis(500)
+                            .withMaxRetryWaitMillis(30 * 1000)
+                            .build()
                             .runInterruptible(new Retryable<Void>() {
                                 @Override
                                 public Void call() throws FTPIllegalReplyException, FTPException, FTPDataTransferException,
@@ -307,10 +315,17 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                             });
                 }
                 catch (RetryGiveupException ex) {
-                    throw Throwables.propagate(ex.getCause());
+                    final Throwable cause = ex.getCause();
+                    if (cause instanceof RuntimeException) {
+                        throw (RuntimeException) cause;
+                    }
+                    else if (cause instanceof Error) {
+                        throw (Error) cause;
+                    }
+                    throw new RuntimeException(cause);
                 }
                 catch (InterruptedException ex) {
-                    throw Throwables.propagate(ex);
+                    throw new RuntimeException(ex);
                 }
             }
             return null;
@@ -328,7 +343,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
         @Override
         public TaskReport commit()
         {
-            return Exec.newTaskReport();
+            return CONFIG_MAPPER_FACTORY.newTaskReport();
         }
 
         private String getRemoteDirectory(String filePath, String separator)
@@ -432,15 +447,15 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
         }
         catch (FTPException ex) {
             log.info("FTP command failed: {}, {}", ex.getCode(), ex.getMessage());
-            throw Throwables.propagate(ex);
+            throw new RuntimeException(ex);
         }
         catch (FTPIllegalReplyException ex) {
             log.info("FTP protocol error");
-            throw Throwables.propagate(ex);
+            throw new RuntimeException(ex);
         }
         catch (IOException ex) {
             log.info("FTP network error: {}", ex);
-            throw Throwables.propagate(ex);
+            throw new RuntimeException(ex);
         }
         finally {
             disconnectClient(client);
@@ -450,10 +465,11 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
     private static FTPClient connect(final FTPClient client, final PluginTask task) throws InterruptedIOException
     {
         try {
-            return retryExecutor()
+            return RetryExecutor.builder()
                     .withRetryLimit(task.getMaxConnectionRetry())
-                    .withInitialRetryWait(500)
-                    .withMaxRetryWait(30 * 1000)
+                    .withInitialRetryWaitMillis(500)
+                    .withMaxRetryWaitMillis(30 * 1000)
+                    .build()
                     .runInterruptible(new Retryable<FTPClient>() {
                         @Override
                         public FTPClient call()
@@ -469,7 +485,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                                 }
                             }
                             catch (FTPIllegalReplyException | FTPException | IOException ex) {
-                                throw Throwables.propagate(ex);
+                                throw new RuntimeException(ex);
                             }
                             return client;
                         }
@@ -505,7 +521,7 @@ public class FtpFileOutputPlugin implements FileOutputPlugin
                     });
         }
         catch (RetryGiveupException ex) {
-            throw Throwables.propagate(ex);
+            throw new RuntimeException(ex);
         }
         catch (InterruptedException ex) {
             throw new InterruptedIOException();

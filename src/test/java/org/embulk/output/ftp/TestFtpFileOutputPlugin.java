@@ -20,13 +20,16 @@ import org.embulk.spi.OutputPlugin;
 import org.embulk.spi.Schema;
 import org.embulk.spi.TransactionalFileOutput;
 import org.embulk.standards.CsvParserPlugin;
-import org.embulk.util.ftp.SSLPlugins;
+import org.embulk.util.config.ConfigMapper;
+import org.embulk.util.config.ConfigMapperFactory;
+import org.embulk.util.ssl.SSLPlugins;
 
 import org.junit.Before;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import static org.junit.Assert.assertEquals;
 
@@ -43,9 +46,13 @@ import java.security.GeneralSecurityException;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 public class TestFtpFileOutputPlugin
 {
+    private static final ConfigMapperFactory CONFIG_MAPPER_FACTORY = FtpFileOutputPlugin.CONFIG_MAPPER_FACTORY;
+    private static final ConfigMapper CONFIG_MAPPER = FtpFileOutputPlugin.CONFIG_MAPPER;
+
     private static String FTP_TEST_HOST;
     private static Integer FTP_TEST_PORT;
     private static Integer FTP_TEST_SSL_PORT;
@@ -98,7 +105,7 @@ public class TestFtpFileOutputPlugin
     @Test
     public void checkDefaultValues()
     {
-        ConfigSource config = Exec.newConfigSource()
+        final ConfigSource config = CONFIG_MAPPER_FACTORY.newConfigSource()
                 .set("in", inputConfig())
                 .set("parser", parserConfig(schemaConfig()))
                 .set("type", "ftp")
@@ -109,7 +116,7 @@ public class TestFtpFileOutputPlugin
                 .set("file_ext", ".csv")
                 .set("formatter", formatterConfig());
 
-        PluginTask task = config.loadConfig(PluginTask.class);
+        final PluginTask task = CONFIG_MAPPER.map(config, PluginTask.class);
 
         assertEquals(FTP_TEST_HOST, task.getHost());
         assertEquals(FTP_TEST_USER, task.getUser().get());
@@ -236,8 +243,8 @@ public class TestFtpFileOutputPlugin
     @Test
     public void testResume()
     {
-        PluginTask task = config().loadConfig(PluginTask.class);
-        ConfigDiff configDiff = plugin.resume(task.dump(), 0, new FileOutputPlugin.Control()
+        final LegacyPluginTask taskLegacy = configLegacy().loadConfig(LegacyPluginTask.class);
+        ConfigDiff configDiff = plugin.resume(taskLegacy.dump(), 0, new FileOutputPlugin.Control()
         {
             @Override
             public List<TaskReport> run(TaskSource taskSource)
@@ -251,20 +258,22 @@ public class TestFtpFileOutputPlugin
     @Test
     public void testCleanup()
     {
-        PluginTask task = config().loadConfig(PluginTask.class);
-        plugin.cleanup(task.dump(), 0, Lists.<TaskReport>newArrayList()); // no errors happens
+        final LegacyPluginTask taskLegacy = configLegacy().loadConfig(LegacyPluginTask.class);
+        plugin.cleanup(taskLegacy.dump(), 0, Lists.<TaskReport>newArrayList()); // no errors happens
     }
 
     @Test
     public void testFtpFileOutputByOpen() throws Exception
     {
-        ConfigSource configSource = config();
-        PluginTask task = configSource.loadConfig(PluginTask.class);
-        task.setSSLConfig(SSLPlugins.configure(task));
-        Schema schema = configSource.getNested("parser").loadConfig(CsvParserPlugin.PluginTask.class).getSchemaConfig().toSchema();
-        runner.transaction(configSource, schema, 0, new Control());
+        final ConfigSource configSourceLegacy = configLegacy();
+        final LegacyPluginTask taskLegacy = configSourceLegacy.loadConfig(LegacyPluginTask.class);
+        final ConfigSource configSource = config();
+        final PluginTask task = CONFIG_MAPPER.map(configSource, PluginTask.class);
+        taskLegacy.setSSLConfig(SSLPlugins.configure(task));
+        Schema schema = configSourceLegacy.getNested("parser").loadConfig(CsvParserPlugin.PluginTask.class).getSchemaConfig().toSchema();
+        runner.transaction(configSourceLegacy, schema, 0, new Control());
 
-        TransactionalFileOutput output = plugin.open(task.dump(), 0);
+        TransactionalFileOutput output = plugin.open(taskLegacy.dump(), 0);
 
         output.nextFile();
 
@@ -280,9 +289,25 @@ public class TestFtpFileOutputPlugin
         assertRecords(remotePath, task);
     }
 
-    public ConfigSource config()
+    public ConfigSource configLegacy()
     {
         return Exec.newConfigSource()
+                .set("in", inputConfig())
+                .set("parser", parserConfig(schemaConfig()))
+                .set("type", "ftp")
+                .set("host", FTP_TEST_HOST)
+                .set("port", FTP_TEST_PORT)
+                .set("user", FTP_TEST_USER)
+                .set("password", FTP_TEST_PASSWORD)
+                .set("path_prefix", FTP_TEST_PATH_PREFIX)
+                .set("last_path", "")
+                .set("file_ext", ".csv")
+                .set("formatter", formatterConfig());
+    }
+
+    public ConfigSource config()
+    {
+        return CONFIG_MAPPER_FACTORY.newConfigSource()
                 .set("in", inputConfig())
                 .set("parser", parserConfig(schemaConfig()))
                 .set("type", "ftp")
@@ -449,5 +474,81 @@ public class TestFtpFileOutputPlugin
             }
         }
         return sb.toString();
+    }
+
+    private interface LegacyPluginTask extends org.embulk.config.Task
+    {
+        @org.embulk.config.Config("host")
+        String getHost();
+
+        @org.embulk.config.Config("port")
+        @org.embulk.config.ConfigDefault("null")
+        Optional<Integer> getPort();
+        void setPort(Optional<Integer> port);
+
+        @org.embulk.config.Config("user")
+        @org.embulk.config.ConfigDefault("null")
+        Optional<String> getUser();
+
+        @org.embulk.config.Config("password")
+        @org.embulk.config.ConfigDefault("null")
+        Optional<String> getPassword();
+
+        @org.embulk.config.Config("passive_mode")
+        @org.embulk.config.ConfigDefault("true")
+        boolean getPassiveMode();
+
+        @org.embulk.config.Config("ascii_mode")
+        @org.embulk.config.ConfigDefault("false")
+        boolean getAsciiMode();
+
+        @org.embulk.config.Config("ssl")
+        @org.embulk.config.ConfigDefault("false")
+        boolean getSsl();
+
+        @org.embulk.config.Config("ssl_explicit")
+        @org.embulk.config.ConfigDefault("true")
+        boolean getSslExplicit();
+
+        SSLPlugins.SSLPluginConfig getSSLConfig();
+        void setSSLConfig(SSLPlugins.SSLPluginConfig config);
+
+        @org.embulk.config.Config("path_prefix")
+        String getPathPrefix();
+
+        @org.embulk.config.Config("file_ext")
+        String getFileNameExtension();
+
+        @org.embulk.config.Config("sequence_format")
+        @org.embulk.config.ConfigDefault("\"%03d.%02d\"")
+        String getSequenceFormat();
+
+        @org.embulk.config.Config("max_connection_retry")
+        @org.embulk.config.ConfigDefault("10") // 10 times retry to connect FTP server if failed.
+        int getMaxConnectionRetry();
+
+        @org.embulk.config.Config("directory_separator")
+        @org.embulk.config.ConfigDefault("\"/\"")
+        String getDirectorySeparator();
+
+        // Came from org.embulk.util.ftp.SSLPlugins.SSLPluginTask
+        @org.embulk.config.Config("ssl_verify")
+        @org.embulk.config.ConfigDefault("null")
+        Optional<Boolean> getSslVerify();
+
+        // Came from org.embulk.util.ftp.SSLPlugins.SSLPluginTask
+        @org.embulk.config.Config("ssl_verify_hostname")
+        @org.embulk.config.ConfigDefault("true")
+        boolean getSslVerifyHostname();
+
+        // Came from org.embulk.util.ftp.SSLPlugins.SSLPluginTask
+        @org.embulk.config.Config("ssl_trusted_ca_cert_file")
+        @org.embulk.config.ConfigDefault("null")
+        Optional<String> getSslTrustedCaCertFile();
+
+        // Came from org.embulk.util.ftp.SSLPlugins.SSLPluginTask
+        @org.embulk.config.Config("ssl_trusted_ca_cert_data")
+        @org.embulk.config.ConfigDefault("null")
+        Optional<String> getSslTrustedCaCertData();
     }
 }
