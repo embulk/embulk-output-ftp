@@ -1,44 +1,145 @@
 plugins {
-    id "com.jfrog.bintray" version "1.7"
-    id "com.github.jruby-gradle.base" version "0.1.5"
     id "java"
+    id "maven-publish"
+    id "signing"
+    id "org.embulk.embulk-plugins" version "0.4.2"
     id "checkstyle"
     id "jacoco"
 }
-import com.github.jrubygradle.JRubyExec
+
 repositories {
     mavenCentral()
+
+    // Tests need EmbulkTestRuntime. EmbulkTestRuntime needs old-style embulk-standards till 0.10.28. 0.10.28 needs jcenter.
+    // Tests call FileInputRunner directly. FileInputRunner needs old-style plugin architecture like 0.10.19. 0.10.19 needs jcenter.
     jcenter()
-    maven {
-        url 'https://dl.bintray.com/embulk-input-ftp/maven'
-    }
-}
-configurations {
-    provided
 }
 
-version = "0.2.3"
+group = "org.embulk"
+version = "0.3.0-SNAPSHOT"
+description = "Store files using FTP."
 
 sourceCompatibility = 1.8
 targetCompatibility = 1.8
 
-dependencies {
-    compile  "org.embulk:embulk-core:0.9.20"
-    provided "org.embulk:embulk-core:0.9.20"
-    compile files("libs/ftp4j-1.7.2.jar")
-    compile 'org.embulk.input.ftp:embulk-util-ftp:0.1.6'
-    compile "org.bouncycastle:bcpkix-jdk15on:1.52"
-    testCompile "junit:junit:4.+"
-    testCompile "org.embulk:embulk-core:0.9.20:tests"
-    testCompile "org.embulk:embulk-standards:0.9.20"
+tasks.withType(JavaCompile) {
+    options.compilerArgs << "-Xlint:deprecation" << "-Xlint:unchecked"
+    options.encoding = "UTF-8"
 }
 
-task classpath(type: Copy, dependsOn: ["jar"]) {
-    doFirst { file("classpath").deleteDir() }
-    from (configurations.runtime - configurations.provided + files(jar.archivePath))
-    into "classpath"
+java {
+    withJavadocJar()
+    withSourcesJar()
 }
-clean { delete "classpath" }
+
+dependencies {
+    compileOnly "org.embulk:embulk-api:0.10.19"
+    compileOnly "org.embulk:embulk-spi:0.10.19"
+
+    compile("org.embulk:embulk-util-config:0.3.1") {
+        // They conflict with embulk-core. They are once excluded here,
+        // and added explicitly with versions exactly the same with embulk-core:0.10.19.
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-annotations"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-core"
+        exclude group: "com.fasterxml.jackson.core", module: "jackson-databind"
+        exclude group: "com.fasterxml.jackson.datatype", module: "jackson-datatype-jdk8"
+        exclude group: "javax.validation", module: "validation-api"
+    }
+
+    // They are once excluded from transitive dependencies of other dependencies,
+    // and added explicitly with versions exactly the same with embulk-core:0.10.19.
+    compile "com.fasterxml.jackson.core:jackson-annotations:2.6.7"
+    compile "com.fasterxml.jackson.core:jackson-core:2.6.7"
+    compile "com.fasterxml.jackson.core:jackson-databind:2.6.7"
+    compile "com.fasterxml.jackson.datatype:jackson-datatype-jdk8:2.6.7"
+    compile "javax.validation:validation-api:1.1.0.Final"
+
+    compile "org.embulk:embulk-util-ssl:0.3.0"
+    compile files("${rootProject.projectDir}/libs/ftp4j-1.7.2.jar")
+    compile "org.bouncycastle:bcpkix-jdk15on:1.52"
+
+    compile "org.embulk:embulk-util-retryhelper:0.8.2"
+
+    testCompile "junit:junit:4.13.2"
+    testCompile "org.embulk:embulk-core:0.10.19"
+    testCompile "org.embulk:embulk-core:0.10.19:tests"
+    testCompile "org.embulk:embulk-standards:0.10.19"
+    testCompile "org.embulk:embulk-deps:0.10.19"
+}
+
+embulkPlugin {
+    mainClass = "org.embulk.output.ftp.FtpFileOutputPlugin"
+    category = "output"
+    type = "ftp"
+}
+
+javadoc {
+    options {
+        locale = "en_US"
+        encoding = "UTF-8"
+    }
+}
+
+publishing {
+    publications {
+        maven(MavenPublication) {
+            groupId = project.group
+            artifactId = project.name
+
+            from components.java  // Must be "components.java". The dependency modification works only for it.
+            // javadocJar and sourcesJar are added by java.withJavadocJar() and java.withSourcesJar() above.
+            // See: https://docs.gradle.org/current/javadoc/org/gradle/api/plugins/JavaPluginExtension.html
+
+            pom {  // https://central.sonatype.org/pages/requirements.html
+                packaging "jar"
+
+                name = project.name
+                description = project.description
+                url = "https://www.embulk.org/"
+
+                licenses {
+                    license {
+                        // http://central.sonatype.org/pages/requirements.html#license-information
+                        name = "The Apache License, Version 2.0"
+                        url = "https://www.apache.org/licenses/LICENSE-2.0.txt"
+                    }
+                }
+
+                developers {
+                }
+
+                scm {
+                    connection = "scm:git:git://github.com/embulk/embulk-output-ftp.git"
+                    developerConnection = "scm:git:git@github.com:embulk/embulk-output-ftp.git"
+                    url = "https://github.com/embulk/embulk-output-ftp"
+                }
+            }
+        }
+    }
+
+    repositories {
+        // It is not ready to release into Maven Central while FTP4J:1.7.2 is not available in Maven Central.
+    }
+}
+
+signing {
+    sign publishing.publications.maven
+}
+
+gem {
+    authors = [ "Satoshi Akama" ]
+    email = [ "satoshiakama@gmail.com" ]
+    summary = "FTP file output plugin for Embulk"
+    homepage = "https://github.com/embulk/embulk-output-ftp"
+    licenses = [ "Apache-2.0" ]
+    into("classpath/") {
+        from "${rootProject.projectDir}/libs/ftp4j-1.7.2.jar"
+    }
+}
+
+gemPush {
+    host = "https://rubygems.org"
+}
 
 checkstyle {
     configFile = file("${project.rootDir}/config/checkstyle/checkstyle.xml")
@@ -56,31 +157,3 @@ task checkstyle(type: Checkstyle) {
     classpath = sourceSets.main.output + sourceSets.test.output
     source = sourceSets.main.allJava + sourceSets.test.allJava
 }
-
-task gem(type: JRubyExec, dependsOn: ["build", "gemspec", "classpath"]) {
-    jrubyArgs "-rrubygems/gem_runner", "-eGem::GemRunner.new.run(ARGV)", "build"
-    script "build/gemspec"
-    doLast { ant.move(file: "${project.name}-${project.version}.gem", todir: "pkg") }
-}
-
-task gemspec << { file("build/gemspec").write($/
-Gem::Specification.new do |spec|
-  spec.name          = "${project.name}"
-  spec.version       = "${project.version}"
-  spec.authors       = ["Satoshi Akama"]
-  spec.summary       = %[FTP file output plugin for Embulk]
-  spec.description   = %[Store files using FTP.]
-  spec.email         = ["satoshiakama@gmail.com"]
-  spec.licenses      = ["Apache 2.0"]
-  spec.homepage      = "https://github.com/embulk/embulk-output-ftp"
-
-  spec.files         = `git ls-files`.split("\n") + Dir["classpath/*.jar"]
-  spec.test_files    = spec.files.grep(%r"^(test|spec)/")
-  spec.require_paths = ["lib"]
-
-  spec.add_development_dependency 'bundler', ['~> 1.0']
-  spec.add_development_dependency 'rake', ['>= 10.0']
-end
-/$)
-}
-clean { delete "${project.name}.gemspec" }
